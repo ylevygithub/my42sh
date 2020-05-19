@@ -1,0 +1,182 @@
+/*
+** EPITECH PROJECT, 2019
+** unittest.c
+** File description:
+** unit testing of minishell2
+*/
+
+#include "../include/my.h"
+#include <criterion/criterion.h>
+
+Test(linked_list, add)
+{
+    t_node *list = NULL;
+
+    list = linked_list_add(list, my_strdup("TESTone"));
+    list = linked_list_add(list, my_strdup("TESTtwo"));
+    list = linked_list_add(list, my_strdup("TESTthree"));
+    cr_assert_str_eq(list->str, "TESTone");
+    cr_assert_str_eq(list->next->str, "TESTtwo");
+    cr_assert_str_eq(list->next->next->str, "TESTthree");
+    cr_assert_null(list->next->next->next);
+    free_linked_list(list);
+}
+
+Test(linked_list, store)
+{
+    t_node *list = NULL;
+    char *test[] = {"TESTone", "TESTtwo", "TESTthree", NULL};
+
+    list = linked_list_store(test);
+    cr_assert_str_eq(list->str, "TESTone");
+    cr_assert_str_eq(list->next->str, "TESTtwo");
+    cr_assert_str_eq(list->next->next->str, "TESTthree");
+    cr_assert_null(list->next->next->next);
+    free_linked_list(list);
+}
+
+Test(get_command, free_command)
+{
+    cr_assert_null(free_commands(NULL));
+}
+
+Test(command, check_entry)
+{
+    char ***commands = malloc(sizeof(char **) * (7 + 1));
+    
+    cr_assert_null(check_entry(NULL, NULL));
+    cr_assert_null(check_entry(commands, NULL));
+}
+
+Test(entry_checking, count_command_nb)
+{
+    cr_expect_eq(count_command_nb("avion < voiture > camion"), 5);
+    cr_expect_eq(count_command_nb("avion << voiture >> camion"), 5);
+    cr_expect_eq(count_command_nb("avion | voiture ; camion"), 5);
+    cr_expect_eq(count_command_nb("avion<camion>voiture;moto|bateau"), 9);
+    cr_expect_eq(count_command_nb("<avion|camion"), 4);
+    cr_expect_eq(count_command_nb(">>avion<camion"), 4);
+    cr_expect_eq(count_command_nb("avion          |                         \
+        camion;            voiture >    bateau"), 7);
+    cr_expect_eq(count_command_nb("avion |< voiture >| camion"), 0);
+    cr_expect_eq(count_command_nb("avion <> voiture >< camion"), 0);
+    cr_expect_eq(count_command_nb("avion <<< voiture >>> camion"), 0);
+    cr_expect_eq(count_command_nb("avion <>< voiture ><> camion"), 0);
+    cr_expect_eq(count_command_nb("avion||camion ||| voiture"), 0);
+    cr_expect_eq(count_command_nb(";avion|camion"), 0);
+    cr_expect_eq(count_command_nb("avion << >> << >>camion | | voiture"), 0);
+    cr_expect_eq(count_command_nb("avion>;<;<;<;<;<;camion"), 0);
+    cr_expect_eq(count_command_nb("|avion>camion"), 0);
+    cr_expect_eq(count_command_nb(
+        "avion >>voiture | camion ;bateau < moto| grue"), 11);
+    cr_expect_eq(count_command_nb(
+        "mkdir test ; cd test ; ls -a ; ls | \
+        cat | wc -c > tutu ; cat tutu"), 15);
+}
+
+Test(tools, clean_str)
+{
+    char *result;
+
+    cr_assert_str_eq(result = clean_str(" AA    Z  Z  E  E \
+        R   T      YYYY     "), "AA Z Z E E R T YYYY");
+    free(result);
+    cr_assert_str_eq(result = clean_str(""), "");
+    free(result);
+    cr_assert_str_eq(result = clean_str(" AA \t     \t    Z  Z  \tE  E   R \
+        T      YYYY     "), "AA Z Z E E R T YYYY");
+    free(result);
+    cr_assert_str_eq(result = clean_str("\tAA\tZ\tZ\
+        \tE\tE\tR\tT\tYYYY"), "AA Z Z E E R T YYYY");
+    free(result);
+    cr_assert_str_eq(result = clean_str("\t \t \t"), "");
+    free(result);
+}
+
+Test(entry_parsing, parse_in_strings)
+{
+    char **array = malloc(sizeof(char *) * (8 + 1));
+    char str[] = "I'am a ; big boy << who love to >eat pancakes;";
+
+    array[8] = NULL;
+    parse_in_strings(str, array);
+    cr_assert_str_eq(array[0], "I'am a");
+    cr_assert_str_eq(array[1], ";");
+    cr_assert_str_eq(array[2], "big boy");
+    cr_assert_str_eq(array[3], "<<");
+    cr_assert_str_eq(array[4], "who love to");
+    cr_assert_str_eq(array[5], ">");
+    cr_assert_str_eq(array[6], "eat pancakes");
+    cr_assert_str_eq(array[7], ";");
+    cr_assert_null(array[8]);
+    for (int index = 0; index <= 8; index++)
+        free(array[index]);
+    free(array);
+}
+
+Test(entry_parsing, parse_entry)
+{
+    int commandNb = 7;
+    char ***commands = malloc(sizeof(char **) * (commandNb + 1));
+    int indexY = 0;
+
+    commands[commandNb] = NULL;
+    parse_entry("Our whole | univers is in > a hot ; dense state",
+        commands, commandNb);
+    cr_assert_str_eq(commands[0][0], "Our");
+    cr_assert_str_eq(commands[0][1], "whole");
+    cr_assert_null(commands[0][2]);
+    cr_assert_str_eq(commands[1][0], "|");
+    cr_assert_null(commands[1][1]);
+    cr_assert_str_eq(commands[2][0], "univers");
+    cr_assert_str_eq(commands[2][1], "is");
+    cr_assert_str_eq(commands[2][2], "in");
+    cr_assert_null(commands[2][3]);
+    cr_assert_str_eq(commands[3][0], ">");
+    cr_assert_null(commands[3][1]);
+    cr_assert_str_eq(commands[4][0], "a");
+    cr_assert_str_eq(commands[4][1], "hot");
+    cr_assert_null(commands[4][2]);
+    cr_assert_str_eq(commands[5][0], ";");
+    cr_assert_null(commands[5][1]);
+    cr_assert_str_eq(commands[6][0], "dense");
+    cr_assert_str_eq(commands[6][1], "state");
+    cr_assert_null(commands[6][2]);
+    cr_assert_null(commands[7]);
+
+    while (commands[indexY]) {
+        for (int indexX = 0; commands[indexY][indexX]; indexX++)
+            free(commands[indexY][indexX]);
+        indexY++;
+    }
+    free(commands);
+}
+
+Test(tools, str_to_int)
+{
+    cr_expect_eq(str_to_int("123"), 123);
+    cr_expect_eq(str_to_int("-123"), -123);
+    cr_expect_eq(str_to_int("-15767"), -15767);
+    cr_expect_eq(str_to_int("-1222"), -1222);
+    cr_expect_eq(str_to_int("10"), 10);
+    cr_expect_eq(str_to_int("0"), 0);
+}
+
+Test(command_execution_tools, tab_to_str) {
+    char **arr = malloc(sizeof(char *) * (5 + 1));
+    char *str;
+
+    arr[0] = my_strdup("check");
+    arr[1] = my_strdup("if");
+    arr[2] = my_strdup("it");
+    arr[3] = my_strdup("is");
+    arr[4] = my_strdup("working");
+    arr[5] = NULL;
+    str = tab_to_str(arr);
+    cr_assert_str_eq(str, "check if it is working");
+    cr_assert(str[22] == '\0');
+    for (int index = 0; arr[index]; index++)
+        free(arr[index]);
+    free(arr);
+    free(str);
+}
